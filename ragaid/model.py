@@ -15,14 +15,18 @@ from .features import extract_features
 from .pitch import PitchTrack
 
 
-def build_estimator(kind: str = "svm"):
+def build_estimator(kind: str = "svm", min_class_count: int = 3):
     if kind == "knn":
         # Bray-Curtis works well on normalised histograms.
         return KNeighborsClassifier(n_neighbors=5, weights="distance", metric="braycurtis")
     if kind == "svm":
         # Calibrated so the app can show meaningful confidence percentages.
+        # Calibration needs >= 2 examples per class in its internal split.
         svc = SVC(kernel="rbf", C=10, class_weight="balanced")
-        return make_pipeline(StandardScaler(), CalibratedClassifierCV(svc, cv=3, ensemble=False))
+        if min_class_count < 2:
+            raise ValueError("svm needs at least 2 training clips per raga; use --model knn or more data")
+        cv = min(3, min_class_count)
+        return make_pipeline(StandardScaler(), CalibratedClassifierCV(svc, cv=cv, ensemble=False))
     raise ValueError(f"unknown model kind: {kind}")
 
 
@@ -37,7 +41,9 @@ class RagaClassifier:
         return extract_features(track, bins=self.bins, use_transitions=self.use_transitions)
 
     def fit(self, X: np.ndarray, y: list[str]) -> "RagaClassifier":
-        self.estimator = build_estimator(self.kind)
+        from collections import Counter
+
+        self.estimator = build_estimator(self.kind, min(Counter(y).values()))
         self.estimator.fit(X, y)
         return self
 

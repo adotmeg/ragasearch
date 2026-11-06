@@ -32,13 +32,17 @@ pytest
 
 ## Real data
 
-**Saraga** (open, with tonic and raga annotations), via mirdata:
+**Saraga 1.5** (open, with tonic and raga annotations and precomputed pitch):
 
 ```bash
-python scripts/make_manifest_saraga.py --tradition hindustani --download   # large download
-python scripts/check_tonic.py data/saraga_hindustani.csv --limit 30        # how good is auto-Sa?
+curl -L -o saraga.zip "https://zenodo.org/records/4301737/files/saraga1.5_hindustani.zip?download=1"
+unzip saraga.zip -d ~/mir_datasets/saraga_hindustani
+python scripts/make_manifest_saraga.py ~/mir_datasets/saraga_hindustani --min-recordings 2 --out data/saraga_hindustani.csv
+python scripts/check_tonic.py data/saraga_hindustani.csv --seconds 30 -j 4   # how good is auto-Sa?
 python scripts/evaluate.py data/saraga_hindustani.csv --clip 10 30 60
 ```
+
+Baseline results are in [`docs/results_saraga_hindustani.md`](docs/results_saraga_hindustani.md). Summary: with 21 ragas and test artists the model never saw, top-1/top-3 accuracy is 52.6%/71.9% on 30-second clips. Automatic Sa detection is correct 88% of the time on 30-second clips.
 
 **Your own recordings:** write a CSV with columns `path,raga,artist,tonic_hz` (leave `tonic_hz` empty to estimate it automatically).
 
@@ -59,7 +63,7 @@ python scripts/evaluate.py data/saraga_hindustani.csv --clip 10 30 60
 | `api/main.py` | FastAPI `/identify` and `/health` |
 
 ## Roadmap
-1. **Baseline on Saraga.** Get real numbers. Inspect the confusion matrix for raga pairs that share a scale.
+1. ~~**Baseline on Saraga.**~~ Done; see `docs/results_saraga_hindustani.md`. **More data** is next: at least 5 recordings by at least 3 artists per raga.
 2. **Tonic robustness.** Evaluate on Saraga. Add a melody-based fallback and let users set or correct Sa in the app.
 3. **Source separation** (Demucs) before pitch tracking, for accompanied recordings.
 4. **Sequence model** (1D CNN or transformer on the tonic-normalised pitch contour, or TDMS features) for phrase-level discrimination.

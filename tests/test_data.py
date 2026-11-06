@@ -21,3 +21,28 @@ def test_precomputed_pitch_file_is_used(tmp_path):
     np.testing.assert_allclose(t.f0_hz, [0, 150, 0, 200, 0])  # negatives -> unvoiced
     assert t.tonic_hz == 150.0
     assert (tmp_path / "cache" / f"{rec.cache_key}.npz").exists()
+
+
+def test_saraga_scanner(tmp_path):
+    import json
+
+    from ragaid.data import saraga_manifest
+
+    def track(release, name, raags, album_artist="A. Singer"):
+        d = tmp_path / "saraga1.5_hindustani" / release / name
+        d.mkdir(parents=True)
+        (d / f"{name}.json").write_text(json.dumps({
+            "raags": [{"common_name": r, "name": r + "ā"} for r in raags],
+            "album_artists": [{"name": album_artist}], "artists": []}))
+        (d / f"{name}.mp3.mp3").write_bytes(b"")
+        (d / f"{name}.pitch.txt").write_text("0.0\t0.0\n")
+        (d / f"{name}.ctonic.txt").write_text("146.5\n")
+        (d / f"._{name}.json").write_bytes(b"\x00\x05junk")  # macOS resource fork
+
+    track("Album 1", "Raag Yaman", ["yaman  kalyan"])
+    track("Album 1", "Ragamala", ["Bhoop", "Des"])  # several ragas -> skipped
+    track("Album 2", "Raag Bhoop", ["Bhoop"], "B. Singer")
+    recs = sorted(saraga_manifest(tmp_path), key=lambda r: r.raga)
+    assert [(r.raga, r.artist, r.tonic_hz) for r in recs] == [("Bhoop", "B. Singer", 146.5),
+                                                               ("Yaman Kalyan", "A. Singer", 146.5)]
+    assert all(r.pitch_path.endswith(".pitch.txt") and r.path.endswith(".mp3.mp3") for r in recs)

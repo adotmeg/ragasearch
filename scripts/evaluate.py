@@ -37,7 +37,7 @@ for secs in args.clip:
     res = cross_validate(X, y, groups, kind=args.model, n_splits=args.folds, **opts)
     print(f"=== {secs:g}s clips: {res['n_clips']} test clips | top-1 {res['top1']:.1%} | top-3 {res['top3']:.1%}")
     if res["n_skipped_unseen_raga"]:
-        print(f"    ({res['n_skipped_unseen_raga']} clips skipped: raga absent from that fold's training artists)")
+        print(f"    ({res['n_skipped_unseen_raga']} clips skipped: raga absent from that fold's training data)")
     for c, acc in res["per_class"].items():
         print(f"    {c:<20}{acc:6.1%}")
     if res["confusion"] is not None:

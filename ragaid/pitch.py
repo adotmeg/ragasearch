@@ -42,11 +42,11 @@ class PitchTrack:
         return cls(times=d["times"], f0_hz=d["f0_hz"], tonic_hz=float(d["tonic_hz"]))
 
 
-def load_audio(path: str, sr: int = SAMPLE_RATE) -> np.ndarray:
-    """Load any audio file as mono float32 at `sr`."""
+def load_audio(path: str, sr: int = SAMPLE_RATE, offset: float = 0.0, duration: float | None = None) -> np.ndarray:
+    """Load any audio file (or an excerpt of it) as mono float32 at `sr`."""
     import librosa
 
-    audio, _ = librosa.load(path, sr=sr, mono=True)
+    audio, _ = librosa.load(path, sr=sr, mono=True, offset=offset, duration=duration)
     return audio.astype(np.float32)
 
 

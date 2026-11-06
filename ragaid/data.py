@@ -82,44 +82,56 @@ def get_pitch_track(rec: Recording, cache_dir="cache/pitch", refresh: bool = Fal
 
 # --------------------------------------------------------------------------- Saraga
 
+SARAGA_URL = "https://zenodo.org/records/4301737/files/saraga1.5_{tradition}.zip?download=1"
+
+
 def _first_name(items) -> str | None:
     for it in items or []:
-        name = it.get("name") or it.get("common_name")
+        name = it.get("name") or (it.get("artist") or {}).get("name")
         if name:
             return name.strip()
     return None
 
 
-def saraga_manifest(tradition: str = "hindustani", data_home: str | None = None,
-                    download: bool = False) -> list[Recording]:
-    """Build a manifest from the Saraga dataset via mirdata.
+def _raga_names(meta: dict) -> set[str]:
+    ragas = meta.get("raags") or meta.get("raagas") or meta.get("raaga") or []
+    # common_name is plain ASCII ("Basanti kedar"); name has diacritics.
+    names = {(r.get("common_name") or r.get("name") or "").strip() for r in ragas}
+    return {" ".join(n.split()).title() for n in names if n}
 
-    The audio is large (tens of GB). `download=True` fetches it into
-    `data_home` (default ~/mir_datasets/saraga_<tradition>). Tracks with no
-    raga, or several ragas (ragamalika), are skipped.
+
+def saraga_manifest(root) -> list[Recording]:
+    """Build a manifest by scanning an unzipped Saraga 1.5 folder.
+
+    Layout: <root>/<release>/<track>/<track>.{json,mp3.mp3,pitch.txt,ctonic.txt}
+    Download (about 4 GB for Hindustani, 13 GB for Carnatic) from SARAGA_URL and unzip.
+    Tracks with no raga, or several ragas (ragamala/ragamalika), are skipped.
     """
-    import mirdata
+    import json
 
-    ds = mirdata.initialize(f"saraga_{tradition}", data_home=data_home)
-    if download:
-        ds.download()
     recs = []
-    for tid, track in ds.load_tracks().items():
-        has_audio = track.audio_path and Path(track.audio_path).exists()
-        has_pitch = track.pitch_path and Path(track.pitch_path).exists()
-        if not (has_audio or has_pitch):
+    for meta_path in sorted(Path(root).rglob("*.json")):
+        if meta_path.name.startswith("._"):
+            continue  # macOS resource-fork junk
+        base = str(meta_path)[: -len(".json")]
+        try:
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError):
             continue
-        meta = track.metadata or {}
-        ragas = meta.get("raags") or meta.get("raaga") or meta.get("ragas") or []
-        names = {(r.get("name") or r.get("common_name") or "").strip() for r in ragas} - {""}
+        names = _raga_names(meta)
         if len(names) != 1:
             continue
-        artist = _first_name(meta.get("album_artists")) or _first_name(meta.get("artists")) or "unknown"
+        audio = next((base + ext for ext in (".mp3.mp3", ".mp3", ".wav") if Path(base + ext).exists()), None)
+        pitch = base + ".pitch.txt" if Path(base + ".pitch.txt").exists() else None
+        if not (audio or pitch):
+            continue
         tonic = None
-        try:
-            tonic = float(track.tonic) if track.tonic else None
-        except Exception:
-            pass
-        pitch = track.pitch_path if track.pitch_path and Path(track.pitch_path).exists() else None
-        recs.append(Recording(track.audio_path, names.pop(), artist, tonic, pitch))
+        if Path(base + ".ctonic.txt").exists():
+            try:
+                tonic = float(Path(base + ".ctonic.txt").read_text().split()[0])
+            except (ValueError, IndexError):
+                pass
+        leads = [a for a in meta.get("artists") or [] if a.get("lead")]
+        artist = _first_name(meta.get("album_artists")) or _first_name(leads) or "unknown"
+        recs.append(Recording(audio or "", names.pop(), artist, tonic, pitch))
     return recs
