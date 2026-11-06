@@ -17,15 +17,24 @@ ap.add_argument("--model", choices=["svm", "knn"], default="svm")
 ap.add_argument("--folds", type=int, default=5)
 ap.add_argument("--no-transitions", action="store_true")
 ap.add_argument("--cache", default="cache/pitch")
+ap.add_argument("--group-by", choices=["artist", "recording"], default="artist",
+                help="artist (strict, default): test artists never seen in training. "
+                     "recording: test recordings unseen, but the same artist may appear in training.")
+ap.add_argument("--min-recordings", type=int, default=1, help="drop ragas with fewer recordings")
 args = ap.parse_args()
 
+from collections import Counter
+
 recs = read_manifest(args.manifest)
+counts = Counter(r.raga for r in recs)
+recs = [r for r in recs if counts[r.raga] >= args.min_recordings]
 opts = dict(use_transitions=not args.no_transitions)
-print(f"{len(recs)} recordings, {len({r.raga for r in recs})} ragas, {len({r.artist for r in recs})} artists\n")
+print(f"split by {args.group_by}; {len(recs)} recordings, {len({r.raga for r in recs})} ragas, {len({r.artist for r in recs})} artists\n")
 for secs in args.clip:
-    X, y, g, _ = build_clip_dataset(recs, RagaClassifier(kind=args.model, **opts), secs,
+    X, y, g, rec_ids = build_clip_dataset(recs, RagaClassifier(kind=args.model, **opts), secs,
                                     cache_dir=args.cache, verbose=False)
-    res = cross_validate(X, y, g, kind=args.model, n_splits=args.folds, **opts)
+    groups = g if args.group_by == "artist" else rec_ids
+    res = cross_validate(X, y, groups, kind=args.model, n_splits=args.folds, **opts)
     print(f"=== {secs:g}s clips: {res['n_clips']} test clips | top-1 {res['top1']:.1%} | top-3 {res['top3']:.1%}")
     if res["n_skipped_unseen_raga"]:
         print(f"    ({res['n_skipped_unseen_raga']} clips skipped: raga absent from that fold's training artists)")

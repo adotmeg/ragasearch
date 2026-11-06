@@ -38,7 +38,7 @@ def cross_validate(X, y, groups, kind="svm", n_splits=5, k=3, **clf_kwargs):
     n_groups = len(set(groups))
     n_splits = min(n_splits, n_groups)
     if n_splits < 2:
-        raise ValueError("Need at least 2 distinct artists for artist-wise cross-validation.")
+        raise ValueError("Need at least 2 distinct groups (artists/recordings) for cross-validation.")
     labels = sorted(set(y))
     top1 = topk = total = 0
     y_true, y_pred = [], []

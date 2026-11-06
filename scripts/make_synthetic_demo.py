@@ -29,7 +29,7 @@ for a in range(args.artists):
     for raga in TOY_RAGAS:
         path = out / f"artist{a}_{raga}.wav"
         sf.write(path, render(raga, args.seconds, tonic, seed=int(rng.integers(1 << 31))), 44100)
-        recs.append(Recording(str(path), raga, f"artist{a}", None if args.blank_tonic else tonic))
+        recs.append(Recording(str(path.resolve()), raga, f"artist{a}", None if args.blank_tonic else tonic))
         print("wrote", path, f"(Sa = {tonic:.1f} Hz)")
 write_manifest(recs, out / "manifest.csv")
 print("manifest:", out / "manifest.csv")
