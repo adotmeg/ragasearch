@@ -3,6 +3,7 @@
     python scripts/train.py data/synthetic/manifest.csv --clip 30 --out models/raga.joblib
 """
 import argparse
+from pathlib import Path
 
 import _path  # noqa: F401
 
@@ -22,5 +23,6 @@ args = ap.parse_args()
 clf = RagaClassifier(kind=args.model)
 X, y, _, _ = build_clip_dataset(read_manifest(args.manifest), clf, args.clip, args.hop, cache_dir=args.cache)
 clf.fit(X, list(y))
+Path(args.out).parent.mkdir(parents=True, exist_ok=True)
 clf.save(args.out)
 print(f"trained {args.model} on {len(y)} clips, {len(clf.classes)} ragas -> {args.out}")

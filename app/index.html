@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Raga Search</title>
+  <meta name="description" content="Listen to Hindustani classical music and identify the raga.">
+  <meta name="theme-color" content="#b4531f">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="top">
+      <h1>Raga Search</h1>
+      <p class="sub">Hold your phone near the music. Best with 30–60 seconds of a single melody.</p>
+    </header>
+
+    <section class="listen" aria-label="Listen">
+      <button id="listenBtn" class="listen-btn" aria-pressed="false">
+        <span class="ring" aria-hidden="true"></span>
+        <svg class="mic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z"/></svg>
+        <svg class="stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+        <span class="visually-hidden" id="listenLabel">Start listening</span>
+      </button>
+      <div class="progress" aria-hidden="true"><div id="progressBar"></div></div>
+      <p id="status" class="status" role="status" aria-live="polite">Tap to start listening</p>
+      <label class="upload">
+        <input id="fileInput" type="file" accept="audio/*">
+        <span>or analyse a recording</span>
+      </label>
+    </section>
+
+    <p id="error" class="error" role="alert" hidden></p>
+
+    <section id="results" class="card results" hidden aria-label="Result">
+      <p class="eyebrow">Best match</p>
+      <div class="best">
+        <h2 id="bestName">–</h2>
+        <span id="bestConf" class="conf">–</span>
+      </div>
+      <dl class="facts">
+        <div><dt>Thaat</dt><dd id="bestThaat">–</dd></div>
+        <div><dt>Time</dt><dd id="bestTime">–</dd></div>
+        <div class="wide"><dt>Svaras</dt><dd id="bestSvaras" class="svaras">–</dd></div>
+      </dl>
+      <p class="eyebrow">Other possibilities</p>
+      <ol id="others" class="others"></ol>
+      <p id="confHint" class="hint"></p>
+    </section>
+
+    <section id="saCard" class="card" hidden aria-label="Tonic">
+      <div class="sa-row">
+        <div>
+          <p class="eyebrow">Sa (tonic)</p>
+          <p class="sa">
+            <label class="visually-hidden" for="saNote">Sa note</label>
+            <select id="saNote" class="sa-select"></select>
+            <span id="saHz" class="muted">–</span> <span id="saSource" class="pill">detected</span>
+          </p>
+        </div>
+        <div class="sa-controls">
+          <button id="saDown" class="icon-btn" aria-label="Lower Sa by a semitone">−</button>
+          <button id="saPlay" class="icon-btn" aria-label="Play Sa drone" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10v4h4l5 4V6L7 10H3Zm13.5 2A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4Z"/></svg>
+          </button>
+          <button id="saUp" class="icon-btn" aria-label="Raise Sa by a semitone">+</button>
+        </div>
+      </div>
+      <p class="hint">If the Sa is wrong, the raga will be wrong. Play the drone and compare it with the music. If it doesn't match, pick the right note (or nudge it with − / +) and the result updates.</p>
+      <button id="saReset" class="link-btn" hidden>Use detected Sa again</button>
+    </section>
+
+    <section id="svaraCard" class="card" hidden aria-label="Notes heard">
+      <p class="eyebrow">Notes heard</p>
+      <div id="svaraChart" class="svara-chart" role="img" aria-label="Time spent on each svara"></div>
+      <p class="hint legend"><span class="key in"></span> in the best match's scale &nbsp; <span class="key out"></span> outside it &nbsp;·&nbsp; lowercase = komal, M = tivra Ma</p>
+    </section>
+
+    <footer class="foot">
+      <details>
+        <summary>About this prototype</summary>
+        <p>Trained on the open Saraga Hindustani dataset. It knows <span id="ragaCount">21</span> ragas:</p>
+        <p id="ragaList" class="muted"></p>
+        <p>Benchmark: the correct raga is in the top 3 about 72% of the time for 30-second clips by singers it has never heard. Works best with vocal or single-instrument music that has a tanpura drone.</p>
+      </details>
+    </footer>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

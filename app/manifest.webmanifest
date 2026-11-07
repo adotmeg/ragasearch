@@ -1,0 +1,10 @@
+{
+  "name": "Raga Search",
+  "short_name": "Raga Search",
+  "description": "Listen to Hindustani music and identify the raga.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#faf6f0",
+  "theme_color": "#b4531f",
+  "icons": [{"src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}]
+}

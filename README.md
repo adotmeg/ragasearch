@@ -30,6 +30,23 @@ curl -F "audio=@some_clip.wav" localhost:8000/identify
 pytest
 ```
 
+## Web app (prototype)
+
+A mobile-first web app in `app/` (plain HTML, CSS and JS, no build step), served by the API:
+
+```bash
+python scripts/train.py data/saraga_hindustani.csv --clip 30 --hop 10 --out models/raga.joblib
+RAGA_MODEL=models/raga.joblib uvicorn api.main:app --host 0.0.0.0 --port 8000
+# open http://localhost:8000
+```
+
+- **Listen:** records from the microphone, sends a first guess at 8 s, updates every 5 s, and stops at 60 s. Echo cancellation, noise suppression and auto gain are turned off, because they damage music.
+- **Analyse a recording:** upload any audio file. Only the first 120 s are used.
+- **Sa (tonic):** shows the detected Sa, lets the user pick the right note or nudge it, and plays a drone to compare by ear. It warns when very little time was spent on the detected Sa, which usually means the detection is wrong.
+- **Notes heard:** time spent on each svara, highlighted against the best match's scale.
+
+**On a phone:** browsers only allow the microphone on `https://` or `localhost`. Put the server behind an HTTPS tunnel or reverse proxy (for example Cloudflare Tunnel, ngrok or Caddy), or run uvicorn with `--ssl-keyfile/--ssl-certfile`. The app can be added to the home screen (it has a web app manifest).
+
 ## Real data
 
 **Saraga 1.5** (open, with tonic and raga annotations and precomputed pitch):
@@ -60,7 +77,9 @@ Baseline results are in [`docs/results_saraga_hindustani.md`](docs/results_sarag
 | `ragaid/data.py` | CSV manifests, pitch cache, Saraga loader |
 | `ragaid/training.py` | clip datasets, artist-wise cross-validation, confusion matrix |
 | `ragaid/synth.py` | toy raga renderer used by the demo and tests |
-| `api/main.py` | FastAPI `/identify` and `/health` |
+| `api/main.py` | FastAPI `/identify`, `/ragas`, `/health`; serves the web app |
+| `app/` | mobile web app (listen, upload, Sa correction, svara chart) |
+| `ragaid/ragas.json` | raga reference cards (thaat, time, svaras) shown in the app |
 
 ## Roadmap
 1. ~~**Baseline on Saraga.**~~ Done; see `docs/results_saraga_hindustani.md`. **More data** is next: at least 5 recordings by at least 3 artists per raga.
@@ -68,4 +87,4 @@ Baseline results are in [`docs/results_saraga_hindustani.md`](docs/results_sarag
 3. **Source separation** (Demucs) before pitch tracking, for accompanied recordings.
 4. **Sequence model** (1D CNN or transformer on the tonic-normalised pitch contour, or TDMS features) for phrase-level discrimination.
 5. **Recording fingerprinting** (Shazam-style) for exact matches against a catalogue.
-6. **App.** Stream audio and show a live top-3 that sharpens over time, plus a "Wrong? Tell us" feedback loop.
+6. **App.** ~~Web prototype~~ done. Next: a "Wrong? Tell us" feedback loop, then a native wrapper (for example Capacitor or Flutter) if needed.

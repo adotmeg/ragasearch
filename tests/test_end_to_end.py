@@ -71,3 +71,25 @@ def test_api_identify(trained, monkeypatch):
     sf.write(buf, np.zeros(SR * 3, dtype=np.float32), SR, format="WAV")
     r = client.post("/identify", files={"audio": ("silence.wav", buf.getvalue(), "audio/wav")}, data={"tonic_hz": "160"})
     assert r.status_code == 422
+
+
+def test_web_app_and_raga_info(trained, monkeypatch):
+    from fastapi.testclient import TestClient
+
+    import api.main as api_main
+
+    monkeypatch.setenv("RAGA_MODEL", str(trained))
+    api_main.model.cache_clear()
+    client = TestClient(api_main.app)
+
+    page = client.get("/")
+    assert page.status_code == 200 and "Raga Search" in page.text
+    assert client.get("/app.js").status_code == 200
+    ragas = client.get("/ragas").json()
+    assert ragas["Yaman"]["svaras"] is None or isinstance(ragas["Yaman"]["svaras"], str)
+    assert set(ragas) == {"Bhoop", "Malkauns", "Yaman"}
+
+    buf = io.BytesIO()
+    sf.write(buf, render("Yaman", 6, 150.0, seed=3), SR, format="WAV")
+    r = client.post("/identify", files={"audio": ("q.wav", buf.getvalue(), "audio/wav")}, data={"tonic_hz": "900"})
+    assert r.status_code == 422  # implausible tonic rejected
