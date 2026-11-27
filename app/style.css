@@ -151,6 +151,7 @@ body {
 .foot { margin-top: 24px; color: var(--muted); font-size: .9rem; }
 .foot summary { cursor: pointer; }
 .foot p { margin: 8px 0; }
+.foot a { color: var(--accent); }
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
