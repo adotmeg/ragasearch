@@ -11,6 +11,7 @@ Two complementary views of a melody:
    This is a cheap first step toward phrase information (aaroh/avaroh,
    vakra movements) that separates ragas that share a scale.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -75,7 +76,7 @@ def svara_sequence(cents: np.ndarray, min_frames: int = 15, tolerance: float = 3
 def transition_matrix(seq: np.ndarray) -> np.ndarray:
     """12x12 row-normalised svara transition probabilities, flattened."""
     m = np.zeros((12, 12))
-    for a, b in zip(seq[:-1], seq[1:]):
+    for a, b in zip(seq[:-1], seq[1:], strict=True):
         m[a, b] += 1
     m += 1e-3  # smoothing so unseen transitions are not exactly zero
     m /= m.sum(axis=1, keepdims=True)
@@ -97,16 +98,17 @@ def extract_features(track: PitchTrack, bins: int = 120, use_transitions: bool =
     return np.concatenate(feats)
 
 
-def clip_tracks(track: PitchTrack, clip_seconds: float, hop_seconds: float | None = None,
-                min_voiced_fraction: float = 0.3) -> list[PitchTrack]:
+def clip_tracks(
+    track: PitchTrack, clip_seconds: float, hop_seconds: float | None = None, min_voiced_fraction: float = 0.3
+) -> list[PitchTrack]:
     """Cut a long pitch track into fixed-length clips (simulating app queries)."""
     hop_seconds = hop_seconds or clip_seconds
     n = frames_for(track, clip_seconds)
     step = frames_for(track, hop_seconds)
     clips = []
     for start in range(0, max(1, len(track.f0_hz) - n + 1), step):
-        f0 = track.f0_hz[start:start + n]
+        f0 = track.f0_hz[start : start + n]
         if np.mean(f0 > 0) < min_voiced_fraction:
             continue  # mostly silence / percussion solo
-        clips.append(PitchTrack(times=track.times[start:start + n], f0_hz=f0, tonic_hz=track.tonic_hz))
+        clips.append(PitchTrack(times=track.times[start : start + n], f0_hz=f0, tonic_hz=track.tonic_hz))
     return clips

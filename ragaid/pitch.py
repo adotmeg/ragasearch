@@ -4,6 +4,7 @@ Essentia is used when available (it has algorithms built specifically for
 Indian art music). Otherwise we fall back to librosa's pYIN and a simple
 pitch-histogram tonic guess, which is far less reliable.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -37,7 +38,7 @@ class PitchTrack:
         np.savez_compressed(path, times=self.times, f0_hz=self.f0_hz, tonic_hz=self.tonic_hz)
 
     @classmethod
-    def load(cls, path) -> "PitchTrack":
+    def load(cls, path) -> PitchTrack:
         d = np.load(path)
         return cls(times=d["times"], f0_hz=d["f0_hz"], tonic_hz=float(d["tonic_hz"]))
 
@@ -45,9 +46,30 @@ class PitchTrack:
 def load_audio(path: str, sr: int = SAMPLE_RATE, offset: float = 0.0, duration: float | None = None) -> np.ndarray:
     """Load any audio file (or an excerpt of it) as mono float32 at `sr`."""
     import librosa
+    import soundfile
 
-    audio, _ = librosa.load(path, sr=sr, mono=True, offset=offset, duration=duration)
+    try:
+        audio, _ = librosa.load(path, sr=sr, mono=True, offset=offset, duration=duration)
+    except soundfile.LibsndfileError:
+        # libsndfile can't read AAC/m4a (iPhone voice memos), WebM/Opus, etc.
+        audio = _load_with_ffmpeg(path, sr, offset, duration)
     return audio.astype(np.float32)
+
+
+def _load_with_ffmpeg(path: str, sr: int, offset: float, duration: float | None) -> np.ndarray:
+    import shutil
+    import subprocess
+
+    if shutil.which("ffmpeg") is None:
+        raise RuntimeError("unsupported audio format (install ffmpeg to decode it)")
+    cmd = ["ffmpeg", "-v", "error", "-nostdin", "-ss", str(offset)]
+    if duration is not None:
+        cmd += ["-t", str(duration)]
+    cmd += ["-i", path, "-f", "f32le", "-ac", "1", "-ar", str(sr), "pipe:1"]
+    proc = subprocess.run(cmd, capture_output=True, timeout=120)
+    if proc.returncode != 0 or not proc.stdout:
+        raise RuntimeError(f"could not decode audio: {proc.stderr.decode(errors='replace').strip()[:200]}")
+    return np.frombuffer(proc.stdout, dtype=np.float32)
 
 
 def extract_pitch(audio: np.ndarray, sr: int = SAMPLE_RATE) -> tuple[np.ndarray, np.ndarray]:

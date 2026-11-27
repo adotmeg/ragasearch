@@ -1,7 +1,8 @@
 """Identify the raga of an audio file.
 
-    python scripts/identify.py some_clip.wav [--tonic 146.8] [--model models/raga.joblib]
+python scripts/identify.py some_clip.wav [--tonic 146.8] [--model models/raga.joblib]
 """
+
 import argparse
 
 import _path  # noqa: F401

@@ -1,8 +1,7 @@
 import numpy as np
 
-from ragaid.features import pitch_class_distribution, svara_sequence, to_cents, transition_matrix
+from ragaid.features import clip_tracks, pitch_class_distribution, svara_sequence, to_cents, transition_matrix
 from ragaid.pitch import PitchTrack
-from ragaid.features import clip_tracks
 
 
 def test_to_cents_octave_and_unvoiced():

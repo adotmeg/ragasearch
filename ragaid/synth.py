@@ -5,6 +5,7 @@ phrases (pakad) and note weights; we render a voice-like tone with glides
 plus a tanpura-like drone (Sa-Pa-Sa) so tonic detection has something to
 lock on to. Use this to check the plumbing, then switch to real data.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -12,22 +13,35 @@ import numpy as np
 # Svara offsets in semitones from Sa: S=0 r=1 R=2 g=3 G=4 m=5 M=6 P=7 d=8 D=9 n=10 N=11
 TOY_RAGAS = {
     # Bhoop: S R G P D (pentatonic)
-    "Bhoop": {"notes": [0, 2, 4, 7, 9], "weights": [1.0, 0.8, 1.4, 1.0, 1.0],
-              "phrases": [[4, 2, 0, -3, 0], [0, 2, 4, 7, 4, 2, 0], [7, 9, 7, 4, 2, 4, 2, 0]]},
+    "Bhoop": {
+        "notes": [0, 2, 4, 7, 9],
+        "weights": [1.0, 0.8, 1.4, 1.0, 1.0],
+        "phrases": [[4, 2, 0, -3, 0], [0, 2, 4, 7, 4, 2, 0], [7, 9, 7, 4, 2, 4, 2, 0]],
+    },
     # Deshkar: same notes as Bhoop, but D and P emphasised, G-R-S avoided
-    "Deshkar": {"notes": [0, 2, 4, 7, 9], "weights": [1.0, 0.3, 0.8, 1.5, 1.4],
-                "phrases": [[9, 7, 4, 7, 9, 7], [0, 2, 4, 7, 9, 12], [4, 7, 9, 7, 4, 0]]},
+    "Deshkar": {
+        "notes": [0, 2, 4, 7, 9],
+        "weights": [1.0, 0.3, 0.8, 1.5, 1.4],
+        "phrases": [[9, 7, 4, 7, 9, 7], [0, 2, 4, 7, 9, 12], [4, 7, 9, 7, 4, 0]],
+    },
     # Malkauns: S g m d n
-    "Malkauns": {"notes": [0, 3, 5, 8, 10], "weights": [1.0, 1.0, 1.4, 1.0, 0.9],
-                 "phrases": [[5, 3, 5, 8, 5, 3, 0], [-2, -4, -2, 0], [3, 5, 8, 10, 8, 5]]},
+    "Malkauns": {
+        "notes": [0, 3, 5, 8, 10],
+        "weights": [1.0, 1.0, 1.4, 1.0, 0.9],
+        "phrases": [[5, 3, 5, 8, 5, 3, 0], [-2, -4, -2, 0], [3, 5, 8, 10, 8, 5]],
+    },
     # Yaman: N R G M P D N (tivra Ma)
-    "Yaman": {"notes": [0, 2, 4, 6, 7, 9, 11], "weights": [1.0, 0.9, 1.4, 0.8, 0.9, 0.8, 1.2],
-              "phrases": [[-1, 2, 4, 2, 0], [4, 6, 9, 7, 6, 4], [-1, 2, 4, 6, 7]]},
+    "Yaman": {
+        "notes": [0, 2, 4, 6, 7, 9, 11],
+        "weights": [1.0, 0.9, 1.4, 0.8, 0.9, 0.8, 1.2],
+        "phrases": [[-1, 2, 4, 2, 0], [4, 6, 9, 7, 6, 4], [-1, 2, 4, 6, 7]],
+    },
 }
 
 
-def render(raga: str, seconds: float = 60.0, tonic_hz: float = 146.83, sr: int = 44100,
-           seed: int | None = None) -> np.ndarray:
+def render(
+    raga: str, seconds: float = 60.0, tonic_hz: float = 146.83, sr: int = 44100, seed: int | None = None
+) -> np.ndarray:
     rng = np.random.default_rng(seed)
     spec = TOY_RAGAS[raga]
     notes, w = np.array(spec["notes"]), np.array(spec["weights"])
@@ -56,7 +70,7 @@ def render(raga: str, seconds: float = 60.0, tonic_hz: float = 146.83, sr: int =
     for n, d in events:
         k = int(d * sr)
         if n is not None:
-            semis[pos:pos + k] = n
+            semis[pos : pos + k] = n
         pos += k
         if pos >= n_samples:
             break
@@ -78,7 +92,9 @@ def render(raga: str, seconds: float = 60.0, tonic_hz: float = 146.83, sr: int =
     voice *= env
 
     tt = np.arange(n_samples) / sr
-    drone = sum(a * np.sin(2 * np.pi * f * tt) for f, a in
-                [(tonic_hz / 2, 0.10), (tonic_hz * 0.75, 0.06), (tonic_hz, 0.08), (tonic_hz * 2, 0.03)])
+    drone = sum(
+        a * np.sin(2 * np.pi * f * tt)
+        for f, a in [(tonic_hz / 2, 0.10), (tonic_hz * 0.75, 0.06), (tonic_hz, 0.08), (tonic_hz * 2, 0.03)]
+    )
     audio = 0.5 * voice + drone + 0.003 * rng.standard_normal(n_samples)
     return (audio / np.max(np.abs(audio)) * 0.8).astype(np.float32)

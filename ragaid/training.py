@@ -1,4 +1,5 @@
 """Turn recordings into (X, y, groups) clip datasets, train and evaluate."""
+
 from __future__ import annotations
 
 from collections import defaultdict
@@ -12,8 +13,14 @@ from .features import clip_tracks
 from .model import RagaClassifier
 
 
-def build_clip_dataset(recs: list[Recording], clf: RagaClassifier, clip_seconds: float,
-                       hop_seconds: float | None = None, cache_dir="cache/pitch", verbose=True):
+def build_clip_dataset(
+    recs: list[Recording],
+    clf: RagaClassifier,
+    clip_seconds: float,
+    hop_seconds: float | None = None,
+    cache_dir="cache/pitch",
+    verbose=True,
+):
     """Every recording -> many fixed-length clips -> feature rows.
 
     groups[i] is the artist of row i, so that splits never put the same
@@ -24,7 +31,10 @@ def build_clip_dataset(recs: list[Recording], clf: RagaClassifier, clip_seconds:
         track = get_pitch_track(rec, cache_dir=cache_dir)
         clips = clip_tracks(track, clip_seconds, hop_seconds)
         if verbose:
-            print(f"  [{i + 1}/{len(recs)}] {rec.raga:<14} {rec.artist:<20} tonic={track.tonic_hz:6.1f} Hz  clips={len(clips)}")
+            print(
+                f"  [{i + 1}/{len(recs)}] {rec.raga:<14} {rec.artist:<20} "
+                f"tonic={track.tonic_hz:6.1f} Hz  clips={len(clips)}"
+            )
         for c in clips:
             X.append(clf.featurize(c))
             y.append(rec.raga)
@@ -56,7 +66,7 @@ def cross_validate(X, y, groups, kind="svm", n_splits=5, k=3, **clf_kwargs):
         proba = clf.predict_proba(X[test_idx])
         classes = np.array(clf.classes)
         order = np.argsort(proba, axis=1)[:, ::-1]
-        for row, true in zip(order, y[test_idx]):
+        for row, true in zip(order, y[test_idx], strict=True):
             ranked = classes[row]
             top1 += ranked[0] == true
             topk += true in ranked[:k]
@@ -79,6 +89,6 @@ def cross_validate(X, y, groups, kind="svm", n_splits=5, k=3, **clf_kwargs):
 def format_confusion(cm, labels, width=9) -> str:
     short = [lab[: width - 1] for lab in labels]
     lines = [" " * width + "".join(f"{s:>{width}}" for s in short) + "   <- predicted"]
-    for lab, row in zip(short, cm):
+    for lab, row in zip(short, cm, strict=True):
         lines.append(f"{lab:<{width}}" + "".join(f"{v:>{width}}" for v in row))
     return "\n".join(lines)

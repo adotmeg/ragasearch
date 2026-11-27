@@ -1,4 +1,5 @@
 """Synthetic audio -> pitch -> features -> classifier -> API. Slow-ish (~1 min)."""
+
 import io
 
 import numpy as np
@@ -69,7 +70,8 @@ def test_api_identify(trained, monkeypatch):
 
     buf = io.BytesIO()
     sf.write(buf, np.zeros(SR * 3, dtype=np.float32), SR, format="WAV")
-    r = client.post("/identify", files={"audio": ("silence.wav", buf.getvalue(), "audio/wav")}, data={"tonic_hz": "160"})
+    files = {"audio": ("silence.wav", buf.getvalue(), "audio/wav")}
+    r = client.post("/identify", files=files, data={"tonic_hz": "160"})
     assert r.status_code == 422
 
 

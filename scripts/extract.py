@@ -1,7 +1,8 @@
 """Run pitch tracking + tonic detection for every recording (cached).
 
-    python scripts/extract.py data/synthetic/manifest.csv -j 4
+python scripts/extract.py data/synthetic/manifest.csv -j 4
 """
+
 import argparse
 from concurrent.futures import ProcessPoolExecutor, as_completed
 

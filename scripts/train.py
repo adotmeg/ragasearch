@@ -1,7 +1,8 @@
 """Train the final model on all recordings and save it.
 
-    python scripts/train.py data/synthetic/manifest.csv --clip 30 --out models/raga.joblib
+python scripts/train.py data/synthetic/manifest.csv --clip 30 --out models/raga.joblib
 """
+
 import argparse
 from pathlib import Path
 

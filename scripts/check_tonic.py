@@ -5,6 +5,7 @@ Estimates are made on short excerpts, as the app would have to.
 
     python scripts/check_tonic.py data/saraga_hindustani.csv --seconds 30 120 -j 4
 """
+
 import argparse
 from collections import Counter
 from concurrent.futures import ProcessPoolExecutor
@@ -63,5 +64,7 @@ if __name__ == "__main__":
             kinds[kind] += 1
             if args.verbose or kind != "ok":
                 print(f"  {kind:<18} annotated={ref:6.1f}  estimated={est:6.1f}  {err:+5.0f} c  {path.split('/')[-1]}")
-        print(f"=== {secs:g}s excerpts, {len(recs)} recordings: " +
-              ", ".join(f"{k} {n} ({n / len(recs):.0%})" for k, n in kinds.most_common()))
+        print(
+            f"=== {secs:g}s excerpts, {len(recs)} recordings: "
+            + ", ".join(f"{k} {n} ({n / len(recs):.0%})" for k, n in kinds.most_common())
+        )

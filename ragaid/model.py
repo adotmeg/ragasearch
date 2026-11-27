@@ -1,4 +1,5 @@
 """Raga classifier: thin wrapper around scikit-learn with top-k output."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -40,7 +41,7 @@ class RagaClassifier:
     def featurize(self, track: PitchTrack) -> np.ndarray:
         return extract_features(track, bins=self.bins, use_transitions=self.use_transitions)
 
-    def fit(self, X: np.ndarray, y: list[str]) -> "RagaClassifier":
+    def fit(self, X: np.ndarray, y: list[str]) -> RagaClassifier:
         from collections import Counter
 
         self.estimator = build_estimator(self.kind, min(Counter(y).values()))
@@ -63,5 +64,5 @@ class RagaClassifier:
         joblib.dump(self, path)
 
     @staticmethod
-    def load(path) -> "RagaClassifier":
+    def load(path) -> RagaClassifier:
         return joblib.load(path)

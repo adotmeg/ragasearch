@@ -9,8 +9,10 @@ Manifest columns:
                time in s, f0 in Hz with 0 = unvoiced), e.g. Saraga's
                *.pitch.txt. Skips the slow pitch-tracking step.
 """
+
 from __future__ import annotations
 
+import contextlib
 import csv
 import hashlib
 from dataclasses import dataclass
@@ -39,9 +41,15 @@ def read_manifest(path) -> list[Recording]:
     with open(path, newline="", encoding="utf-8") as f:
         for row in csv.DictReader(f):
             tonic = row.get("tonic_hz") or ""
-            out.append(Recording(row["path"], row["raga"].strip(), (row.get("artist") or "unknown").strip(),
-                                 float(tonic) if tonic.strip() else None,
-                                 (row.get("pitch_path") or "").strip() or None))
+            out.append(
+                Recording(
+                    row["path"],
+                    row["raga"].strip(),
+                    (row.get("artist") or "unknown").strip(),
+                    float(tonic) if tonic.strip() else None,
+                    (row.get("pitch_path") or "").strip() or None,
+                )
+            )
     return out
 
 
@@ -51,8 +59,9 @@ def write_manifest(recs: list[Recording], path) -> None:
         w = csv.writer(f)
         w.writerow(["path", "raga", "artist", "tonic_hz", "pitch_path"])
         for r in recs:
-            w.writerow([r.path, r.raga, r.artist, "" if r.tonic_hz is None else f"{r.tonic_hz:.3f}",
-                        r.pitch_path or ""])
+            w.writerow(
+                [r.path, r.raga, r.artist, "" if r.tonic_hz is None else f"{r.tonic_hz:.3f}", r.pitch_path or ""]
+            )
 
 
 def load_pitch_file(path) -> tuple[np.ndarray, np.ndarray]:
@@ -127,10 +136,8 @@ def saraga_manifest(root) -> list[Recording]:
             continue
         tonic = None
         if Path(base + ".ctonic.txt").exists():
-            try:
+            with contextlib.suppress(ValueError, IndexError):
                 tonic = float(Path(base + ".ctonic.txt").read_text().split()[0])
-            except (ValueError, IndexError):
-                pass
         leads = [a for a in meta.get("artists") or [] if a.get("lead")]
         artist = _first_name(meta.get("album_artists")) or _first_name(leads) or "unknown"
         recs.append(Recording(audio or "", names.pop(), artist, tonic, pitch))
